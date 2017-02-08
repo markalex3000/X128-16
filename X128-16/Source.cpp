@@ -40,7 +40,7 @@ bool yes_no(string s) {
 //	Declarations
 double get_max(vector<double>& l);
 double get_min(vector<double>& l);
-double get_mode(vector<double>& l);
+bool get_mode(vector<double>& l, vector<int>& mi);
 double get_mean(vector<double>& l);
 double get_median(vector<double>& l);
 void print_list(vector<double>& l);
@@ -55,8 +55,11 @@ int main() {
 	double mode_of_list{ 0 };
 	double mean_of_list{ 0 };
 	double median_of_list{ 0 };
+	bool multi_modal{ false };
+	int temp_mode_index{ 0 };
 
 	vector<double> number_list;
+	vector<int> mode_indexes;
 
 
 	//	Loop to get the numbers - put them in a vector
@@ -70,22 +73,46 @@ int main() {
 
 	do
 	{
-		if (number_list.size() != 0) number_list.clear();
+		if (number_list.size() != 0) number_list.clear();      // clear vectors if they are not empty
+		if (mode_indexes.size() != 0) mode_indexes.clear();
+
 		cout << "Enter the list of values [any char to terminate data entry]: ";
 		do  {
 			cin >> user_input_number;
 			number_list.push_back(user_input_number);
 			cout << "number is " << user_input_number << "\tbadbit is " << cin.fail() << "\n";
 		} while (cin.fail() == false);
+		number_list.pop_back();  //burn the last nimber entered as it gets added to the list twice
 		cin.clear();
 		print_list(number_list);
-		cout << "Max\tMin\tMode\tMean\tMedian\n";
+		cout << "Max\tMin\tMean\tMedian\n";
 		cout << get_max(number_list) << "\t";
 		cout << get_min(number_list) << "\t";
-		cout << get_mode(number_list) << "\t";
 		cout << get_mean(number_list) << "\t";
 		cout << get_median(number_list) << "\t";
 		cout << "\n";
+		if (!get_mode(number_list, mode_indexes)) {
+			for (int i = 0;i < mode_indexes.size() - 1;++i) {
+				if (mode_indexes[i] > mode_indexes[i + 1]) {
+					temp_mode_index = i;
+				}
+			}
+			cout << "Sequence is mono-modal.  Mode is " << number_list[temp_mode_index] << "\n";
+		}
+		else {
+			cout << "Sequence is multi-modal, modes are: \n";
+			for (int i = 0;i < mode_indexes.size() - 1;++i) {
+				if (mode_indexes[i] > mode_indexes[i + 1]) {
+					temp_mode_index = i;
+				}
+			}
+			for (int i = 0;i < mode_indexes.size();++i) {
+				if (mode_indexes[i] == mode_indexes[temp_mode_index]) {
+					cout << "\t Mode: " << number_list[i];
+				}
+			}
+			cout << "\n";
+		}
 		keep_window_open();
 
 	} while (yes_no("Do you want to do another? "));
@@ -111,25 +138,50 @@ double get_min(vector<double>& l)
 	return temp;
 }
 
-double get_mode(vector<double>& l)
+bool get_mode(vector<double>& l, vector<int>& mi)
 {
-	int count{ 0 };
+	int count{ 1 };
 	int uber_count{ 0 };
 	int temp_mode_index{ 0 };
+
+	int m_count{ 0 };
+	int m_max_count{ 0 };
+	int m_count_index{ 0 };
 	for (int i = 0; i < l.size(); ++i) {
 		temp_mode_index = i;
-		for (int j = temp_mode_index + 1;j < l.size();++j) {
+		for (int j = temp_mode_index + 1;j < (l.size()-1);++j) {
 			if (l[i] == l[j]) {
 				count += 1;
 			}
 			else continue;
 		}
+		
+		mi.push_back(count);						// record the count of repeats
 		if (count > uber_count) {
 			uber_count = count;
+			count = 1;
 			temp_mode_index = i;
 		}
-		else continue;
+		else {
+			count = 1;
+			continue;
+		}
 	}
+	// check to see if single mode
+	for (int i = 0;i < mi.size() - 1;++i) {
+		if (mi[i] > mi[i + 1]) {
+			m_max_count = mi[i];
+		}
+	}
+	for (int i = 0;i < mi.size() ;++i) {
+		if (mi[i] == m_max_count) m_count += 1;
+	}
+	if (m_count == 1) return false;
+	else return true;
+
+	// otherwise we are bi- or multi-modal
+
+
 	return l[temp_mode_index];
 }
 

@@ -50,12 +50,8 @@ void print_list(vector<double>& l);
 int main() {
 	double user_input_number{ 0.0 };
 	char user_input_char{ 'A' };
-	double max_of_list{ 0 };
-	double min_of_list{ 0 };
-	double mode_of_list{ 0 };
-	double mean_of_list{ 0 };
-	double median_of_list{ 0 };
 	bool multi_modal{ false };
+	bool uniform_distribution{ true };
 	int temp_mode_index{ 0 };
 
 	vector<double> number_list;
@@ -75,14 +71,15 @@ int main() {
 	{
 		if (number_list.size() != 0) number_list.clear();      // clear vectors if they are not empty
 		if (mode_indexes.size() != 0) mode_indexes.clear();
+		uniform_distribution = true;
 
 		cout << "Enter the list of values [any char to terminate data entry]: ";
 		do  {
 			cin >> user_input_number;
 			number_list.push_back(user_input_number);
 			cout << "number is " << user_input_number << "\tbadbit is " << cin.fail() << "\n";
-		} while (cin.fail() == false);
-		number_list.pop_back();  //burn the last nimber entered as it gets added to the list twice
+		} while (cin.fail() == false);		
+		number_list.pop_back();  //burn the last number entered as it gets added to the list twice
 		cin.clear();
 		print_list(number_list);
 		cout << "Max\tMin\tMean\tMedian\n";
@@ -91,24 +88,32 @@ int main() {
 		cout << get_mean(number_list) << "\t";
 		cout << get_median(number_list) << "\t";
 		cout << "\n";
-		if (!get_mode(number_list, mode_indexes)) {
+
+		//  mode has to be handled differently since the list may have more than one mode or it may have no modes
+
+		if (!get_mode(number_list, mode_indexes)) {    //get_mode is false if single mode
 			for (int i = 0;i < mode_indexes.size() - 1;++i) {
-				if (mode_indexes[i] > mode_indexes[i + 1]) {
-					temp_mode_index = i;
-				}
+				if (mode_indexes[i] > mode_indexes[i + 1]) 	temp_mode_index = i;
 			}
 			cout << "Sequence is mono-modal.  Mode is " << number_list[temp_mode_index] << "\n";
 		}
-		else {
-			cout << "Sequence is multi-modal, modes are: \n";
+		else {											// multi-modal or every value appears the same number of times
+
 			for (int i = 0;i < mode_indexes.size() - 1;++i) {
+				if (mode_indexes[i] != mode_indexes[i + 1]) uniform_distribution = false;
 				if (mode_indexes[i] > mode_indexes[i + 1]) {
-					temp_mode_index = i;
+					temp_mode_index = i;				// temp_mode_index is the largest number of repeats
 				}
 			}
-			for (int i = 0;i < mode_indexes.size();++i) {
-				if (mode_indexes[i] == mode_indexes[temp_mode_index]) {
-					cout << "\t Mode: " << number_list[i];
+			if (uniform_distribution) {
+				cout << "Sequence is a uniform distribution. \n";
+			}
+			else {
+				cout << "Sequence is multi-modal, modes are: \n";
+				for (int i = 0;i < mode_indexes.size();++i) {
+					if (mode_indexes[i] == mode_indexes[temp_mode_index]) {
+						cout << "\t Mode: " << number_list[i];
+					}
 				}
 			}
 			cout << "\n";
@@ -138,7 +143,7 @@ double get_min(vector<double>& l)
 	return temp;
 }
 
-bool get_mode(vector<double>& l, vector<int>& mi)
+bool get_mode(vector<double>& l, vector<int>& mi)  // return true if multi-modal, false if single mode
 {
 	int count{ 1 };
 	int uber_count{ 0 };
@@ -147,42 +152,38 @@ bool get_mode(vector<double>& l, vector<int>& mi)
 	int m_count{ 0 };
 	int m_max_count{ 0 };
 	int m_count_index{ 0 };
+
+	// loop goes through list and checks each number for the number of times it is repeated (count)
+	// starts at 1 - so actually counts the number of times a number is repeated in the list
+
 	for (int i = 0; i < l.size(); ++i) {
-		temp_mode_index = i;
-		for (int j = temp_mode_index + 1;j < (l.size()-1);++j) {
+		temp_mode_index = i;   // keeps track of where we are in the list of numbers
+		count = 1;				// reset count for next number in list
+		for (int j = temp_mode_index + 1;j < l.size();++j) {
 			if (l[i] == l[j]) {
 				count += 1;
 			}
 			else continue;
 		}
 		
-		mi.push_back(count);						// record the count of repeats
-		if (count > uber_count) {
+		mi.push_back(count);		// record the count of repeats in vector matching by index the number list
+		if (count > uber_count) {	// check to see if we have exceeded the previous high count
 			uber_count = count;
-			count = 1;
-			temp_mode_index = i;
 		}
-		else {
-			count = 1;
-			continue;
-		}
+		else continue;
 	}
-	// check to see if single mode
+	// count to see the number of times the max number of repeats occurs
 	for (int i = 0;i < mi.size() - 1;++i) {
 		if (mi[i] > mi[i + 1]) {
-			m_max_count = mi[i];
+			m_max_count = mi[i];	// m_max_count will equal the largest number of repeated values
 		}
 	}
+	// check to see if more that one value is repeated m_max_count number of times - if so multi-modal
 	for (int i = 0;i < mi.size() ;++i) {
 		if (mi[i] == m_max_count) m_count += 1;
 	}
 	if (m_count == 1) return false;
 	else return true;
-
-	// otherwise we are bi- or multi-modal
-
-
-	return l[temp_mode_index];
 }
 
 double get_mean(vector<double>& l)

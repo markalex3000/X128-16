@@ -40,10 +40,20 @@ bool yes_no(string s) {
 //	Declarations
 double get_max(vector<double>& l);
 double get_min(vector<double>& l);
-bool get_mode(vector<double>& l, vector<int>& mi);
+
 double get_mean(vector<double>& l);
 double get_median(vector<double>& l);
 void print_list(vector<double>& l);
+struct mode_tracker {
+	double the_number{ 0 };
+	int repeat_count{ 1 };
+};
+
+bool get_mode(vector<double>& l, vector<mode_tracker>& mt);
+
+bool UDGreater(mode_tracker elem1, mode_tracker elem2) {
+	return elem1.repeat_count > elem2.repeat_count;
+};
 
 //  Start the main loop - continue until user says quit
 
@@ -54,8 +64,10 @@ int main() {
 	bool uniform_distribution{ true };
 	int temp_mode_index{ 0 };
 
-	vector<double> number_list;
-	vector<int> mode_indexes;
+	vector<double> number_list;				// original number list
+	vector<double> sorted_number_list;		// copied to here and then sorted
+	vector<int> mode_indexes;				// to be used to keep track of 
+	vector<mode_tracker> the_modes;
 
 
 	//	Loop to get the numbers - put them in a vector
@@ -70,8 +82,11 @@ int main() {
 	do
 	{
 		if (number_list.size() != 0) number_list.clear();      // clear vectors if they are not empty
+		if (sorted_number_list.size() != 0) sorted_number_list.clear();
 		if (mode_indexes.size() != 0) mode_indexes.clear();
-		uniform_distribution = true;
+		if (the_modes.size() != 0) the_modes.clear();
+
+		uniform_distribution = true;							// start by assuming list has uniform distribution
 
 		cout << "Enter the list of values [any char to terminate data entry]: ";
 		do  {
@@ -82,16 +97,30 @@ int main() {
 		number_list.pop_back();  //burn the last number entered as it gets added to the list twice
 		cin.clear();
 		print_list(number_list);
+
+		// copy number_list to sorted_number_list
+		for (int i = 0; i < number_list.size(); ++i) {
+			sorted_number_list.push_back(number_list[i]);
+		}
+		cout << "copy of list: \n";
+		print_list(sorted_number_list);
+
+		//sort the copied list
+		sort(sorted_number_list.begin(), sorted_number_list.end());
+
+		cout << "sorted list:\n";
+		print_list(sorted_number_list);
+
 		cout << "Max\tMin\tMean\tMedian\n";
 		cout << get_max(number_list) << "\t";
 		cout << get_min(number_list) << "\t";
 		cout << get_mean(number_list) << "\t";
-		cout << get_median(number_list) << "\t";
+		cout << get_median(sorted_number_list) << "\t";
 		cout << "\n";
 
 		//  mode has to be handled differently since the list may have more than one mode or it may have no modes
-
-		if (!get_mode(number_list, mode_indexes)) {    //get_mode is false if single mode
+		get_mode(sorted_number_list, the_modes);
+/*		if (!get_mode(number_list, the_modes)) {    //get_mode is false if single mode
 			for (int i = 0;i < mode_indexes.size() - 1;++i) {
 				if (mode_indexes[i] > mode_indexes[i + 1]) 	temp_mode_index = i;
 			}
@@ -118,6 +147,7 @@ int main() {
 			}
 			cout << "\n";
 		}
+		*/
 		keep_window_open();
 
 	} while (yes_no("Do you want to do another? "));
@@ -143,7 +173,7 @@ double get_min(vector<double>& l)
 	return temp;
 }
 
-bool get_mode(vector<double>& l, vector<int>& mi)  // return true if multi-modal, false if single mode
+bool get_mode(vector<double>& l, vector<mode_tracker>& mt)  // return true if multi-modal, false if single mode
 {
 	int count{ 1 };
 	int uber_count{ 0 };
@@ -153,25 +183,51 @@ bool get_mode(vector<double>& l, vector<int>& mi)  // return true if multi-modal
 	int m_max_count{ 0 };
 	int m_count_index{ 0 };
 
+	mode_tracker temp_mt;
+
 	// loop goes through list and checks each number for the number of times it is repeated (count)
 	// starts at 1 - so actually counts the number of times a number is repeated in the list
 
 	for (int i = 0; i < l.size(); ++i) {
-		temp_mode_index = i;   // keeps track of where we are in the list of numbers
+		temp_mt.the_number = l[i];
+		if (i < l.size() - 1 && l[i] == l[i + 1]) temp_mt.repeat_count += 1;
+		else {
+			mt.push_back(temp_mt);
+			temp_mt.repeat_count = 1;
+		}
+	}
+
+
+
+
+/*
+		temp_mode_index = i + count - 1;   // keeps track of where we are in the list of numbers
 		count = 1;				// reset count for next number in list
+		temp_mt.the_number = l[temp_mode_index];
+		temp_mt.repeat_count = count;
+		mt.push_back(temp_mt);
 		for (int j = temp_mode_index + 1;j < l.size();++j) {
-			if (l[i] == l[j]) {
+			if (l[temp_mode_index] == l[j]) {
 				count += 1;
+				mt[i].repeat_count = count;
 			}
 			else continue;
 		}
-		
-		mi.push_back(count);		// record the count of repeats in vector matching by index the number list
-		if (count > uber_count) {	// check to see if we have exceeded the previous high count
-			uber_count = count;
-		}
-		else continue;
 	}
+
+	*/
+	cout << "unsorted mode tracker: \n";
+	for (int k = 0; k < mt.size(); ++k) {
+		cout << "Number is \t" << mt[k].the_number << "Repeat count\t" << mt[k].repeat_count << "\n";
+	}
+	sort(mt.begin(), mt.end(), UDGreater);
+
+	cout << "unsorted mode tracker: \n";
+	for (int k = 0; k < mt.size(); ++k) {
+		cout << "Number is \t" << mt[k].the_number << "Repeat count\t" << mt[k].repeat_count << "\n";
+	}
+	
+	/*
 	// count to see the number of times the max number of repeats occurs
 	for (int i = 0;i < mi.size() - 1;++i) {
 		if (mi[i] > mi[i + 1]) {
@@ -182,13 +238,14 @@ bool get_mode(vector<double>& l, vector<int>& mi)  // return true if multi-modal
 	for (int i = 0;i < mi.size() ;++i) {
 		if (mi[i] == m_max_count) m_count += 1;
 	}
+	*/
 	if (m_count == 1) return false;
 	else return true;
 }
 
 double get_mean(vector<double>& l)
 {
-	int sum{ 0 };
+	double sum{ 0 };
 	for (int i = 0; i < l.size();++i) {
 		sum += l[i];
 	}
@@ -198,9 +255,10 @@ double get_mean(vector<double>& l)
 double get_median(vector<double>& l)
 {
 	double mid_point_index{ 0 };
-	mid_point_index = l.size() / 2;
-	if (mid_point_index == trunc(mid_point_index)) return l[mid_point_index];
-	else return (l[mid_point_index] + l[mid_point_index + 1]) / 2;
+	mid_point_index = (l.size() / 2.0) - 1;
+	cout << "midpoint index = " << mid_point_index << "\ttrunc = " << trunc(mid_point_index) << "\n";
+	if (mid_point_index == trunc(mid_point_index)) return (l[mid_point_index] + l[mid_point_index + 1]) / 2;
+	else return l[mid_point_index + 1];
 }
 
 void print_list(vector<double>& l)

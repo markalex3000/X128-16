@@ -38,18 +38,21 @@ bool yes_no(string s) {
 };
 
 //	Declarations
-double get_max(vector<double>& l);
-double get_min(vector<double>& l);
-
-double get_mean(vector<double>& l);
-double get_median(vector<double>& l);
-void print_list(vector<double>& l);
 struct mode_tracker {
 	double the_number{ 0 };
 	int repeat_count{ 1 };
 };
 
+double get_max(vector<double>& l);
+double get_min(vector<double>& l);
+double get_mean(vector<double>& l);
+double get_median(vector<double>& l);
+void print_list(vector<double>& l);
+
 bool get_mode(vector<double>& l, vector<mode_tracker>& mt);
+bool is_single_mode(vector<mode_tracker> & mt);
+bool is_uniform_distribution(vector<mode_tracker> & mt);
+int get_the_modes(vector<mode_tracker> & mt, vector<double>& lom);
 
 bool UDGreater(mode_tracker elem1, mode_tracker elem2) {
 	return elem1.repeat_count > elem2.repeat_count;
@@ -63,20 +66,19 @@ int main() {
 	bool multi_modal{ false };
 	bool uniform_distribution{ true };
 	int temp_mode_index{ 0 };
+	int number_of_modes{ 0 };
 
 	vector<double> number_list;				// original number list
 	vector<double> sorted_number_list;		// copied to here and then sorted
 	vector<int> mode_indexes;				// to be used to keep track of 
 	vector<mode_tracker> the_modes;
+	vector<double> list_of_modes;
 
 
 	//	Loop to get the numbers - put them in a vector
 	//  minimal error handling - check for error on reading input if fail check to see if exit code
-
 	//	Do the calculations using a set of functions all which take a reference to number_list
-
 	//	Output the list tab separated ten values per row
-
 	//	Ask if wants to enter another list
 
 	do
@@ -85,8 +87,7 @@ int main() {
 		if (sorted_number_list.size() != 0) sorted_number_list.clear();
 		if (mode_indexes.size() != 0) mode_indexes.clear();
 		if (the_modes.size() != 0) the_modes.clear();
-
-		uniform_distribution = true;							// start by assuming list has uniform distribution
+		if (list_of_modes.size() != 0) list_of_modes.clear();
 
 		cout << "Enter the list of values [any char to terminate data entry]: ";
 		do  {
@@ -94,8 +95,10 @@ int main() {
 			number_list.push_back(user_input_number);
 			cout << "number is " << user_input_number << "\tbadbit is " << cin.fail() << "\n";
 		} while (cin.fail() == false);		
+
 		number_list.pop_back();  //burn the last number entered as it gets added to the list twice
 		cin.clear();
+
 		print_list(number_list);
 
 		// copy number_list to sorted_number_list
@@ -119,36 +122,26 @@ int main() {
 		cout << "\n";
 
 		//  mode has to be handled differently since the list may have more than one mode or it may have no modes
-		get_mode(sorted_number_list, the_modes);
-/*		if (!get_mode(number_list, the_modes)) {    //get_mode is false if single mode
-			for (int i = 0;i < mode_indexes.size() - 1;++i) {
-				if (mode_indexes[i] > mode_indexes[i + 1]) 	temp_mode_index = i;
-			}
-			cout << "Sequence is mono-modal.  Mode is " << number_list[temp_mode_index] << "\n";
-		}
-		else {											// multi-modal or every value appears the same number of times
 
-			for (int i = 0;i < mode_indexes.size() - 1;++i) {
-				if (mode_indexes[i] != mode_indexes[i + 1]) uniform_distribution = false;
-				if (mode_indexes[i] > mode_indexes[i + 1]) {
-					temp_mode_index = i;				// temp_mode_index is the largest number of repeats
-				}
-			}
-			if (uniform_distribution) {
-				cout << "Sequence is a uniform distribution. \n";
-			}
-			else {
-				cout << "Sequence is multi-modal, modes are: \n";
-				for (int i = 0;i < mode_indexes.size();++i) {
-					if (mode_indexes[i] == mode_indexes[temp_mode_index]) {
-						cout << "\t Mode: " << number_list[i];
-					}
-				}
-			}
-			cout << "\n";
+		get_mode(sorted_number_list, the_modes);
+
+		if (is_uniform_distribution(the_modes)) {
+			cout << "Sequence is a uniform distribution. \n";
+			continue;
 		}
-		*/
-		keep_window_open();
+		
+		if (is_single_mode(the_modes)) {
+			cout << "Sequence is mono-modal.  Mode is " << the_modes[0].the_number << "\n";
+			continue;
+		}
+
+		cout << "Sequence is multi-modal, modes are: \n";
+		number_of_modes = get_the_modes(the_modes, list_of_modes);
+		for (int i = 0; i < number_of_modes; ++i) {
+			cout << "\t Mode: " << list_of_modes[i];
+		}
+
+	keep_window_open();
 
 	} while (yes_no("Do you want to do another? "));
 }
@@ -197,25 +190,6 @@ bool get_mode(vector<double>& l, vector<mode_tracker>& mt)  // return true if mu
 		}
 	}
 
-
-
-
-/*
-		temp_mode_index = i + count - 1;   // keeps track of where we are in the list of numbers
-		count = 1;				// reset count for next number in list
-		temp_mt.the_number = l[temp_mode_index];
-		temp_mt.repeat_count = count;
-		mt.push_back(temp_mt);
-		for (int j = temp_mode_index + 1;j < l.size();++j) {
-			if (l[temp_mode_index] == l[j]) {
-				count += 1;
-				mt[i].repeat_count = count;
-			}
-			else continue;
-		}
-	}
-
-	*/
 	cout << "unsorted mode tracker: \n";
 	for (int k = 0; k < mt.size(); ++k) {
 		cout << "Number is \t" << mt[k].the_number << "Repeat count\t" << mt[k].repeat_count << "\n";
@@ -227,18 +201,6 @@ bool get_mode(vector<double>& l, vector<mode_tracker>& mt)  // return true if mu
 		cout << "Number is \t" << mt[k].the_number << "Repeat count\t" << mt[k].repeat_count << "\n";
 	}
 	
-	/*
-	// count to see the number of times the max number of repeats occurs
-	for (int i = 0;i < mi.size() - 1;++i) {
-		if (mi[i] > mi[i + 1]) {
-			m_max_count = mi[i];	// m_max_count will equal the largest number of repeated values
-		}
-	}
-	// check to see if more that one value is repeated m_max_count number of times - if so multi-modal
-	for (int i = 0;i < mi.size() ;++i) {
-		if (mi[i] == m_max_count) m_count += 1;
-	}
-	*/
 	if (m_count == 1) return false;
 	else return true;
 }
@@ -256,7 +218,7 @@ double get_median(vector<double>& l)
 {
 	double mid_point_index{ 0 };
 	mid_point_index = (l.size() / 2.0) - 1;
-	cout << "midpoint index = " << mid_point_index << "\ttrunc = " << trunc(mid_point_index) << "\n";
+//	cout << "midpoint index = " << mid_point_index << "\ttrunc = " << trunc(mid_point_index) << "\n";
 	if (mid_point_index == trunc(mid_point_index)) return (l[mid_point_index] + l[mid_point_index + 1]) / 2;
 	else return l[mid_point_index + 1];
 }
@@ -269,4 +231,36 @@ void print_list(vector<double>& l)
 	}
 	cout << "\n";
 	return;
+}
+bool is_single_mode(vector<mode_tracker> & mt) {
+	// assumes vector of mdes has been sorted in decending order by number of repeats so will be single mode
+	// the repeat count of the second element does not eaqual the repeat count of the first.
+
+	if (mt[0].repeat_count != mt[1].repeat_count) return true;
+	else return false;
+}
+bool is_uniform_distribution(vector<mode_tracker> & mt) {
+	// assumes vector of mdes has been sorted in decending order by number of repeats so will be uniform if 
+	// the repeat count of all elements are the same
+	int tester{ 0 };
+	tester = mt[0].repeat_count;
+	for (int i = 0; i < mt.size() - 1;++i) {
+		if (tester == mt[i].repeat_count) continue;
+		else return false;
+	}
+	return true;
+}
+int get_the_modes(vector<mode_tracker> & mt, vector<double>& lom) {
+	int previous_value{ 0 };
+	int count_of_modes{ 0 };
+	previous_value = mt[0].repeat_count;
+	for (int i = 1; i < mt.size(); ++i) {
+		if (previous_value == mt[i].repeat_count) {
+			lom.push_back(mt[i].the_number);
+			count_of_modes += 1;
+			continue;
+		}
+		else return(count_of_modes);
+	}
+	return(count_of_modes);
 }

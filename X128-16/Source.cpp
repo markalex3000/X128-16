@@ -25,6 +25,7 @@ inline void simple_error(string s)	// write ``error: s and exit program
 bool yes_no(string s) {
 	char response{ 'X' };
 	cout << s << " (y/n): ";
+	cin.ignore(numeric_limits<streamsize>::max(), '\n');
 	cin >> response;
 	switch (response)
 	{
@@ -111,7 +112,7 @@ int main() {
 		//sort the copied list
 		sort(sorted_number_list.begin(), sorted_number_list.end());
 
-		cout << "sorted list:\n";
+		cout << "sorted copy of list:\n";
 		print_list(sorted_number_list);
 
 		cout << "Max\tMin\tMean\tMedian\n";
@@ -138,12 +139,12 @@ int main() {
 		cout << "Sequence is multi-modal, modes are: \n";
 		number_of_modes = get_the_modes(the_modes, list_of_modes);
 		for (int i = 0; i < number_of_modes; ++i) {
-			cout << "\t Mode: " << list_of_modes[i];
+			cout << "\n Mode: " << list_of_modes[i];
 		}
 
 	keep_window_open();
 
-	} while (yes_no("Do you want to do another? "));
+	} while (yes_no("\nDo you want to do another? "));
 }
 
 double get_max(vector<double>& l)
@@ -252,8 +253,9 @@ bool is_uniform_distribution(vector<mode_tracker> & mt) {
 }
 int get_the_modes(vector<mode_tracker> & mt, vector<double>& lom) {
 	int previous_value{ 0 };
-	int count_of_modes{ 0 };
+	int count_of_modes{ 1 };
 	previous_value = mt[0].repeat_count;
+	lom.push_back(mt[0].the_number);
 	for (int i = 1; i < mt.size(); ++i) {
 		if (previous_value == mt[i].repeat_count) {
 			lom.push_back(mt[i].the_number);
